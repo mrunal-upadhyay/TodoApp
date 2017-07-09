@@ -36,9 +36,9 @@ public class MainActivity extends AppCompatActivity {
         lvItems.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                todoItems.remove(i);
+                String removedItemText = todoItems.remove(i);
                 aToDoAdapter.notifyDataSetChanged();
-                writeItems();
+                deleteItem(removedItemText);
                 return true;
             }
         });
@@ -56,10 +56,10 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
             String EditedItem = data.getStringExtra("UpdatedItem");
             int EditedItemPosition = data.getIntExtra("Position", 0);
-            todoItems.remove(EditedItemPosition);
+            String oldText = todoItems.remove(EditedItemPosition);
             todoItems.add(EditedItemPosition, EditedItem);
             aToDoAdapter.notifyDataSetChanged();
-            writeItems();
+            writeItems(oldText, EditedItem);
         }
     }
 
@@ -77,31 +77,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onAddItem(View view) {
-        aToDoAdapter.add(etEditText.getText().toString());
+        String text = etEditText.getText().toString();
+        aToDoAdapter.add(text);
+        writeItems(text, text);
         etEditText.setText("");
-        writeItems();
     }
 
     private void readItems() {
-        File filesDir = getFilesDir();
-        File file = new File(filesDir, "todo.txt");
-        try {
-            todoItems = new ArrayList<>(FileUtils.readLines(file));
-        } catch (FileNotFoundException e) {
-            todoItems = new ArrayList();
-        } catch (IOException e) {
-        }
-
-
+        // Get singleton instance of database
+        TodoItemsDatabaseHelper databaseHelper = TodoItemsDatabaseHelper.getInstance(this);
+        todoItems = databaseHelper.getAllItems();
     }
 
-    private void writeItems() {
-        File filesDir = getFilesDir();
-        File file = new File(filesDir, "todo.txt");
-        try {
-            FileUtils.writeLines(file, todoItems);
-        } catch (IOException e) {
-        }
-
+    private void deleteItem(String text) {
+        TodoItemsDatabaseHelper databaseHelper = TodoItemsDatabaseHelper.getInstance(this);
+        databaseHelper.deleteItem(text);
+    }
+    private void writeItems(String oldText, String newText) {
+        TodoItemsDatabaseHelper databaseHelper = TodoItemsDatabaseHelper.getInstance(this);
+        databaseHelper.addOrUpdateItem(oldText, newText);
     }
 }
